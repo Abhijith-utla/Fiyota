@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,12 +21,18 @@ export default function Quiz() {
   const [downPayment, setDownPayment] = useState(5000);
   const [preferredPayment, setPreferredPayment] = useState(450);
   const [loanTerm, setLoanTerm] = useState(60);
+  const [customTerm, setCustomTerm] = useState(60);
   const [hasTradeIn, setHasTradeIn] = useState(false);
   const [tradeInValue, setTradeInValue] = useState(0);
   const [drivingStyle, setDrivingStyle] = useState("commute");
   const [familySize, setFamilySize] = useState(1);
   const [eco, setEco] = useState("neutral");
   const [preference, setPreference] = useState<"finance" | "lease">("finance");
+
+  useEffect(() => {
+    // Reset custom term to a sensible default when preference changes
+    setCustomTerm(preference === "lease" ? 36 : 60);
+  }, [preference]);
 
   const interestGuess = useMemo(() => {
     // Simple heuristic for APR based on credit score
@@ -37,7 +43,7 @@ export default function Quiz() {
   }, [creditScore]);
 
   const progressPct = useMemo(() => {
-    const total = 3; // number of steps (flashcards)
+    const total = 4; // number of steps (flashcards)
     return Math.min(100, Math.max(0, Math.round((step / total) * 100)));
   }, [step]);
 
@@ -182,7 +188,7 @@ export default function Quiz() {
       <header className="border-b bg-card sticky top-0 z-20">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Find your perfect Toyota</h1>
-          <div className="text-sm text-muted-foreground">Step {step} / 3</div>
+          <div className="text-sm text-muted-foreground">Step {step} / 4</div>
         </div>
         <div className="container mx-auto px-4 pb-3">
           <div className="h-1.5 w-full rounded bg-muted overflow-hidden">
@@ -249,6 +255,55 @@ export default function Quiz() {
                 {step === 3 && (
                   <div className="animate-in fade-in slide-in-from-left-4">
                     <div className="rounded-xl bg-primary/5 p-6 border border-primary/10">
+                      <h2 className="text-xl font-semibold mb-2">What term works for you?</h2>
+                      <p className="text-sm text-muted-foreground mb-4">Select your {preference === 'lease' ? 'lease' : 'loan'} term</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {(
+                          preference === 'lease'
+                            ? [
+                                { label: '24 mo', value: 24 },
+                                { label: '36 mo', value: 36 },
+                                { label: '39 mo', value: 39 },
+                                { label: '42 mo', value: 42 },
+                                { label: '48 mo', value: 48 },
+                              ]
+                            : [
+                                { label: '36 mo', value: 36 },
+                                { label: '48 mo', value: 48 },
+                                { label: '60 mo', value: 60 },
+                                { label: '72 mo', value: 72 },
+                              ]
+                        ).map(o => (
+                          <Button key={o.label} variant="outline" className="h-14" onClick={() => { setLoanTerm(o.value); setStep(4); }}>{o.label}</Button>
+                        ))}
+                      </div>
+                      <div className="mt-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm">Or pick a custom term</Label>
+                          <div className="text-sm font-medium">{customTerm} months</div>
+                        </div>
+                        <Slider
+                          value={[customTerm]}
+                          onValueChange={(v) => setCustomTerm(v[0])}
+                          min={preference === 'lease' ? 12 : 24}
+                          max={preference === 'lease' ? 48 : 84}
+                          step={preference === 'lease' ? 3 : 6}
+                        />
+                        <div className="flex justify-end">
+                          <Button onClick={() => { setLoanTerm(customTerm); setStep(4); }}>Use this term</Button>
+                        </div>
+                      </div>
+                      <div className="flex justify-between mt-4">
+                        <Button variant="ghost" onClick={prev}>Back</Button>
+                        <Button variant="ghost" onClick={() => setStep(4)}>Continue</Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {step === 4 && (
+                  <div className="animate-in fade-in slide-in-from-left-4">
+                    <div className="rounded-xl bg-primary/5 p-6 border border-primary/10">
                       <h2 className="text-xl font-semibold mb-2">How much upfront?</h2>
                       <p className="text-sm text-muted-foreground mb-4">Choose a down payment</p>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -269,7 +324,7 @@ export default function Quiz() {
                   </div>
                 )}
 
-                {step < 3 && (
+                {step < 4 && (
                   <div className="flex items-center justify-between pt-2">
                     <Button variant="outline" onClick={prev} disabled={step === 1}>Back</Button>
                     <Button variant="ghost" onClick={finish}>Skip and see picks</Button>
