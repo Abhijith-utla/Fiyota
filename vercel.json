@@ -3,6 +3,10 @@
     {
       "source": "/api/carfax/(.*)",
       "destination": "https://helix.carfax.com/$1"
+    },
+    {
+      "source": "/((?!api).*)",
+      "destination": "/index.html"
     }
   ]
 }
